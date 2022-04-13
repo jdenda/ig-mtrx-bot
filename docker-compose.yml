@@ -1,0 +1,13 @@
+version: "3"
+services:
+  igmtrx:
+    image: igmtrxbot:latest
+    container_name: ig-matrix-bridge
+    user: node
+    environment:
+      - MATRIX_HOST=https://synapse
+      - MATRIX_USER=@ibot:synapse.de
+      - MATRIX_PASSWORD=xxxx
+      - BASE_URL=https://ig.de
+      - MATRIX_ROOM=!ekq:synapse.de
+      - FEEDS=https://ig.rss.xml,https://emiokok/rss.xml
