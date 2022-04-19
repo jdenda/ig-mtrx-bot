@@ -96,6 +96,22 @@ function sendMessage(body) {
   );
 }
 
+function sendNotice(body) {
+  var content = {
+    body: body,
+    msgtype: "m.text",
+  };
+  matrixClient.sendEvent(
+    MATRIX_ROOM,
+    "m.room.notice",
+    content,
+    "",
+    (err, res) => {
+      console.log(err);
+    }
+  );
+}
+
 var app = express();
 app.use("/images", express.static("images"));
 
@@ -130,10 +146,9 @@ var download = function (uri, filename, callback) {
   });
 };
 
-async function scrapeData(url) {
+async function scrapeData(url, artist) {
   try {
     const id = url.substring(32);
-    console.log(id);
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
 
@@ -145,7 +160,8 @@ async function scrapeData(url) {
       download(BASE_URL + imgurl, "./images/" + id + "-" + idx + ".jpg", () => {
         sendImage(
           "http://localhost:5001/" + "images/" + id + "-" + idx + ".jpg",
-          "./images/" + id + "-" + idx + ".jpg"
+          "./images/" + id + "-" + idx + ".jpg",
+          "url: " + url.toString() + " from: " + artist
         );
       });
     });
@@ -156,11 +172,10 @@ async function scrapeData(url) {
 }
 
 feeder.on("new-item", function (item) {
-  console.log(item.link);
-  scrapeData(item.link);
+  scrapeData(item.link, item.meta.title);
 });
 
-async function sendImage(url, imagePath) {
+async function sendImage(url, imagePath, message) {
   try {
     const imageResponse = await axios.get(url, { responseType: "arraybuffer" });
     const imageType = imageResponse.headers["content-type"];
@@ -171,6 +186,7 @@ async function sendImage(url, imagePath) {
     );
     const matrixUrl = uploadResponse.content_uri;
     console.log(matrixUrl);
+    await sendMessage(message);
     const sendImageResponse = await matrixClient.sendImageMessage(
       MATRIX_ROOM,
       matrixUrl,
