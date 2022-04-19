@@ -12,7 +12,7 @@ if (
   process.env.MATRIX_HOST &&
   process.env.MATRIX_USER &&
   process.env.MATRIX_ROOM &&
-  process.env.MATRIX_PASSWORD &&
+  process.env.MATRIX_ACCESSTOKEN &&
   process.env.BASE_URL &&
   process.env.FEEDS
 ) {
@@ -24,7 +24,7 @@ if (
 
 const MATRIX_HOST = process.env.MATRIX_HOST;
 const MATRIX_USER = process.env.MATRIX_USER;
-const MATRIX_PASSWORD = process.env.MATRIX_PASSWORD;
+const MATRIX_ACCESSTOKEN = process.env.MATRIX_ACCESSTOKEN;
 const MATRIX_ROOM = process.env.MATRIX_ROOM;
 const BASE_URL = process.env.BASE_URL;
 const FEEDS = process.env.FEEDS;
@@ -32,18 +32,69 @@ const ARRAY_FEED = FEEDS.split(",");
 
 console.log(MATRIX_HOST);
 console.log(MATRIX_USER);
-console.log(MATRIX_PASSWORD);
+console.log(MATRIX_ACCESSTOKEN);
 console.log(MATRIX_ROOM);
 console.log(BASE_URL);
 console.log(FEEDS);
 console.log(ARRAY_FEED);
 
-MATRIX_USER;
-const matrixClient = sdk.createClient(MATRIX_HOST);
-matrixClient.login("m.login.password", {
-  password: MATRIX_PASSWORD,
-  user: MATRIX_USER,
+// const matrixClient = sdk.createClient(MATRIX_HOST);
+// matrixClient.login("m.login.password", {
+//   password: MATRIX_PASSWORD,
+//   user: MATRIX_USER,
+// });
+const matrixClient = sdk.createClient({
+  baseUrl: MATRIX_HOST,
+  accessToken: MATRIX_ACCESSTOKEN,
+  userId: MATRIX_USER,
 });
+
+const listenToMessages = async () => {
+  matrixClient.on("Room.timeline", function (event, room, toStartOfTimeline) {
+    if (toStartOfTimeline) {
+      return; // don't print paginated results
+    }
+    if (event.getType() !== "m.room.message") {
+      return; // only print messages
+    }
+    if (room.roomId == MATRIX_ROOM) {
+      const msg = event.getContent().body;
+      if (msg.startsWith("!ig")) {
+        const cmd = msg.substring(4);
+
+        if (cmd == "list") {
+          sendAllActiveSubs();
+        }
+      }
+    }
+  });
+};
+
+const startListener = () => {
+  matrixClient.startClient();
+  matrixClient.once("sync", function (state, prevState, res) {
+    console.log(state);
+    listenToMessages();
+  });
+};
+
+startListener();
+
+function sendMessage(body) {
+  var content = {
+    body: body,
+    msgtype: "m.text",
+  };
+  matrixClient.sendEvent(
+    MATRIX_ROOM,
+    "m.room.message",
+    content,
+    "",
+    (err, res) => {
+      console.log(err);
+    }
+  );
+}
 
 var app = express();
 app.use("/images", express.static("images"));
@@ -57,6 +108,18 @@ feeder.add({
   refresh: 2000,
 });
 const base = BASE_URL;
+
+const sendAllActiveSubs = () => {
+  let rss = [];
+  const arr = feeder.list;
+  arr.forEach((el) => {
+    rss.push(el.url);
+  });
+  sendMessage(
+    "You are subscribed to following rss feeds: " +
+      rss.toString().replace(",", " and ")
+  );
+};
 
 var download = function (uri, filename, callback) {
   request.head(uri, function (err, res, body) {
@@ -131,3 +194,14 @@ const deleteImage = (imagePath) => {
     }
   });
 };
+
+// const listenToMessages = async () => {
+//   matrixClient.on("Room.timeline", function (event, room, toStartOfTimeline) {
+//     if (event.getType() !== "m.room.message") {
+//       return; // only use messages
+//     }
+//     console.log(event.event.content.body);
+//   });
+// };
+
+// listenToMessages();

@@ -7,7 +7,7 @@ services:
     environment:
       - MATRIX_HOST=https://synapse
       - MATRIX_USER=@ibot:synapse.de
-      - MATRIX_PASSWORD=xxxx
+      - MATRIX_ACCESSTOKEN=xx
       - BASE_URL=https://ig.de
       - MATRIX_ROOM=!ekq:synapse.de
       - FEEDS=https://ig.rss.xml,https://emiokok/rss.xml
