@@ -117,7 +117,7 @@ const sendAllActiveSubs = () => {
   });
   sendMessage(
     "You are subscribed to following rss feeds: " +
-      rss.toString().replace(",", " and ")
+      rss.toString().replaceAll(",", " and ")
   );
 };
 
