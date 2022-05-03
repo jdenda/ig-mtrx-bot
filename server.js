@@ -13,8 +13,7 @@ if (
   process.env.MATRIX_USER &&
   process.env.MATRIX_ROOM &&
   process.env.MATRIX_ACCESSTOKEN &&
-  process.env.BASE_URL &&
-  process.env.FEEDS
+  process.env.BASE_URL
 ) {
   console.log("All nessesary variables are set! you are good to go!");
 } else {
@@ -27,22 +26,37 @@ const MATRIX_USER = process.env.MATRIX_USER;
 const MATRIX_ACCESSTOKEN = process.env.MATRIX_ACCESSTOKEN;
 const MATRIX_ROOM = process.env.MATRIX_ROOM;
 const BASE_URL = process.env.BASE_URL;
-const FEEDS = process.env.FEEDS;
-const ARRAY_FEED = FEEDS.split(",");
+const ARRAY_FEED = [];
+let config;
 
 console.log(MATRIX_HOST);
 console.log(MATRIX_USER);
 console.log(MATRIX_ACCESSTOKEN);
 console.log(MATRIX_ROOM);
 console.log(BASE_URL);
-console.log(FEEDS);
-console.log(ARRAY_FEED);
 
-// const matrixClient = sdk.createClient(MATRIX_HOST);
-// matrixClient.login("m.login.password", {
-//   password: MATRIX_PASSWORD,
-//   user: MATRIX_USER,
-// });
+const init = () => {
+  fs.readFile(
+    "/mnt/config/abos.json",
+    "utf8",
+    function readFileCallback(err, data) {
+      if (err) {
+        console.log(err);
+      } else {
+        config = JSON.parse(data); //now it an object
+        console.log(config.abos);
+        abos = config.abos;
+        abos.forEach((abo) => {
+          console.log(abo.rss);
+          ARRAY_FEED.push(abo.rss);
+        });
+        startRssListener();
+      }
+    }
+  );
+};
+init();
+
 const matrixClient = sdk.createClient({
   baseUrl: MATRIX_HOST,
   accessToken: MATRIX_ACCESSTOKEN,
@@ -65,7 +79,47 @@ const listenToMessages = async () => {
         if (cmd == "list") {
           sendAllActiveSubs();
         }
+        if (cmd.startsWith("add ")) {
+          const url = cmd.substring(4);
+          ARRAY_FEED.push(url);
+          saveAbos(ARRAY_FEED);
+          feeder.add({
+            url: url,
+            refresh: 2000,
+          });
+        }
       }
+    }
+  });
+};
+
+const saveAbos = (abos) => {
+  var obj;
+  var added = [];
+
+  abonniert = config.abos;
+  abonniert.forEach((abo) => {
+    added.push(abo.rss);
+  });
+
+  abos.forEach((abo) => {
+    if (!added.includes(abo.toString())) {
+      console.log(abo + " is not in abos");
+      const o = {
+        id: abonniert.length + 1,
+        rss: abo,
+      };
+      config.abos.push(o);
+      saveNewAbos();
+    }
+  });
+};
+
+const saveNewAbos = () => {
+  fs.writeFile("/mnt/config/abos.json", JSON.stringify(config), (err) => {
+    if (err) {
+      console.error(err);
+      return;
     }
   });
 };
@@ -119,11 +173,12 @@ var server = app.listen(5001, () => {
   console.log(`Running server on PORT 5001...`);
 });
 
-feeder.add({
-  url: ARRAY_FEED,
-  refresh: 2000,
-});
-const base = BASE_URL;
+const startRssListener = () => {
+  feeder.add({
+    url: ARRAY_FEED,
+    refresh: 2000,
+  });
+};
 
 const sendAllActiveSubs = () => {
   let rss = [];

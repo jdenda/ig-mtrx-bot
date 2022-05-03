@@ -7,6 +7,7 @@ WORKDIR /home/node/ig-mtrx-bot
 
 RUN npm install 
 RUN mkdir -p /home/node/ig-mtrx-bot/images
+RUN mkdir -p /mnt/config/
 RUN chown -R node:node /home/node/ig-mtrx-bot/
 
 CMD [ "npm","run","start" ]

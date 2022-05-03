@@ -1,0 +1,9 @@
+{
+    "abos": [{
+        "id": 1,
+        "rss": "https:///rss.xml"
+    }, {
+        "id": 2,
+        "rss": "https:///rss.xml"
+    }]
+}
