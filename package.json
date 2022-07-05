@@ -4,7 +4,7 @@
     "cheerio": "^1.0.0-rc.10",
     "express": "^4.17.3",
     "fs": "^0.0.1-security",
-    "matrix-js-sdk": "^17.0.0",
+    "matrix-js-sdk": "^19.0.0",
     "request": "^2.88.2",
     "rss-feed-emitter": "^3.2.3"
   }
